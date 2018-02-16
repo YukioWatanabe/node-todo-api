@@ -4,8 +4,15 @@ const request = require('supertest');
 const { app } = require('./../server');
 const { Todo } = require('./../models/todo');
 
+const todosMock = [
+    { text: "Do the dishes" },
+    { text: "Wash clothes" }
+];
+
 beforeEach((done) => {
-    Todo.remove({}).then(() => done());
+    Todo.remove({}).then( () => { 
+        return Todo.insertMany(todosMock);
+    }).then(() => done());
 });
 
 describe('POST /todos', () => {
@@ -24,11 +31,12 @@ describe('POST /todos', () => {
                     return done(err);
                 }
 
-                Todo.find().then((todos) => {
+                Todo.find({ text }).then((todos) => {
                     expect(todos.length).toBe(1);
                     expect(todos[0].text).toBe(text);
-                    done();
-                }).catch(e => done(e));
+                })
+                .then(done)
+                .catch(done);
             });
     });
 
@@ -43,9 +51,29 @@ describe('POST /todos', () => {
                 }
 
                 Todo.find().then((todos) => {
-                    expect(todos.length).toBe(0);
-                    done();
-                }).catch(e => done(e));
+                    expect(todos.length).toBe(2);
+                })
+                .then(done)
+                .catch(done);
             });
-    })
+    });    
+});
+
+describe('GET /todos', () => {
+    it('should return all todos', (done) => {
+        request(app)
+            .get('/todos')
+            .expect(200)
+            .end((err,res) => {
+                if (err) {
+                    return done(err);
+                }
+
+                Todo.find().then((todos) => {
+                    expect(res.body.todos.length).toBe(todos.length);
+                })
+                .then(done)
+                .catch(done);
+            });
+    });
 });
