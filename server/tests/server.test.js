@@ -7,7 +7,7 @@ const { Todo } = require('./../models/todo');
 
 const todosMock = [
     { _id : new ObjectID(), text: "Do the dishes" },
-    { _id : new ObjectID(), text: "Wash clothes" }
+    { _id : new ObjectID(), text: "Wash clothes", completed : true, completedAt : 333 }
 ];
 
 beforeEach((done) => {
@@ -142,6 +142,43 @@ describe('DELETE /todos/:id', () => {
         request(app)
             .delete('/todos/123')
             .expect(404)
+            .end(done);
+    });
+});
+
+describe('PATCH /todos/:id', () => {
+    it('should update the todo', (done) => {
+        var id = todosMock[0]._id;
+        var body = { "text" : "Some todo", "completed" : true };
+
+        request(app)
+            .patch(`/todos/${id}`)
+            .send( body )
+            .expect(200)
+            .expect((res) => {
+                var resTodo = res.body.todo;
+
+                expect(resTodo.text).toBe(body.text);
+                expect(resTodo.completed).toBe(body.completed);
+                expect(resTodo.completedAt).toBeA('number');
+            })
+            .end(done);
+    });
+
+    it('should clear completedAt when todo is not completed', (done) => {
+        var id = todosMock[1]._id.toHexString();
+        var body = { "completed" : false };
+
+        request(app)
+            .patch(`/todos/${id}`)
+            .send(body)
+            .expect(200)
+            .expect(res => {
+                var resTodo = res.body.todo;
+
+                expect(resTodo.completed).toBe(body.completed);
+                expect(resTodo.completedAt).toBe(null);
+            })
             .end(done);
     });
 });
